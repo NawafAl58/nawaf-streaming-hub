@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #050505;
+  --purple: #a855f7;
+  --ice-blue: #38bdf8;
+}
+
+body {
+  background: var(--background);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.neon-border-purple {
+  border: 1px solid var(--purple);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+.neon-border-blue {
+  border: 1px solid var(--ice-blue);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.focus-state:focus {
+  outline: 3px solid var(--ice-blue);
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}
