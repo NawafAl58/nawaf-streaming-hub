@@ -51,7 +51,7 @@ export default function Home() {
               className="group relative rounded-lg overflow-hidden glass focus-state block"
             >
               <img 
-                src={`https://image.tmdb.org/t/p/w500${item.poster_path}`} 
+                src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster'} 
                 alt={item.title || item.name}
                 className="w-full aspect-[2/3] object-cover transition-transform group-hover:scale-110"
               />

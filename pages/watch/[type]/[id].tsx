@@ -35,13 +35,14 @@ export default function Watch() {
           src={embedUrl}
           className="w-full h-full border-b border-purple-500/30"
           allowFullScreen
+          frameBorder="0"
         />
       </div>
 
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex flex-col md:flex-row gap-8">
           <img 
-            src={`https://image.tmdb.org/t/p/w500${details.poster_path}`}
+            src={details.poster_path ? `https://image.tmdb.org/t/p/w500${details.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster'}
             className="w-48 rounded-xl shadow-2xl neon-border-purple hidden md:block"
             alt=""
           />
