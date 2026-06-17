@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { Search, TrendingUp } from 'lucide-react';
 
-// Using a known fallback key that is frequently used in open-source educational projects
-const TMDB_API_KEY = 'c8233f2022d1645e5052327771746977'; 
-
 export default function Home() {
   const [trending, setTrending] = useState([]);
   const [search, setSearch] = useState('');
@@ -15,17 +12,14 @@ export default function Home() {
     async function fetchData() {
       try {
         setLoading(true);
-        const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_API_KEY}`);
+        // Using internal API route to bypass CORS and rotate keys server-side
+        const res = await fetch(`/api/tmdb?path=trending/all/day`);
         if (!res.ok) {
-           // If the first key fails, try the original key as fallback
-           const altRes = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=8d9047190e290e2ef59c9ba25c6198f3`);
-           if (!altRes.ok) throw new Error('All API keys failed');
-           const data = await altRes.json();
-           setTrending(data.results || []);
-        } else {
-          const data = await res.json();
-          setTrending(data.results || []);
+          const errData = await res.json();
+          throw new Error(errData.error || 'Failed to fetch');
         }
+        const data = await res.json();
+        setTrending(data.results || []);
         setError(null);
       } catch (err: any) {
         console.error('Fetch failed:', err);
@@ -76,9 +70,14 @@ export default function Home() {
           </div>
         ) : error ? (
           <div className="bg-red-900/20 border border-red-500/50 p-6 rounded-xl text-center">
-            <p className="text-red-400 mb-2">Failed to load content from TMDB</p>
-            <p className="text-sm text-gray-500">Error: {error}</p>
-            <p className="mt-4 text-xs text-gray-400">Please check the console for more details.</p>
+            <p className="text-red-400 mb-2">Service unavailable</p>
+            <p className="text-sm text-gray-500">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs transition-colors"
+            >
+              Retry Connection
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
