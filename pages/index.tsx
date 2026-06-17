@@ -4,60 +4,47 @@ import { useRouter } from 'next/router';
 
 export default function Home() {
   const [trending, setTrending] = useState([]);
-  const [popular, setPopular] = useState([]);
-  const [topRated, setTopRated] = useState([]);
+  const [popularMovies, setPopularMovies] = useState([]);
+  const [popularTV, setPopularTV] = useState([]);
   const [heroMovie, setHeroMovie] = useState<any>(null);
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [scrolled, setScrolled] = useState(false);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
-    async function fetchMovies() {
+    async function fetchAll() {
       try {
-        const [trendingRes, popularRes, topRatedRes] = await Promise.all([
-          fetch('/api/tmdb?path=trending/all/day'),
-          fetch('/api/tmdb?path=movie/popular'),
-          fetch('/api/tmdb?path=tv/popular')
+        const [t, m, v] = await Promise.all([
+          fetch('/api/tmdb?path=trending/all/day').then(r => r.json()),
+          fetch('/api/tmdb?path=movie/popular').then(r => r.json()),
+          fetch('/api/tmdb?path=tv/popular').then(r => r.json())
         ]);
-
-        const trendingData = await trendingRes.json();
-        const popularData = await popularRes.json();
-        const topRatedData = await topRatedRes.json();
-
-        setTrending(trendingData.results || []);
-        setPopular(popularData.results || []);
-        setTopRated(topRatedData.results || []);
-        
-        if (trendingData.results?.length > 0) {
-          setHeroMovie(trendingData.results[0]);
-        }
-      } catch (err) {
-        console.error('Failed to fetch movies:', err);
-      } finally {
-        setLoading(false);
+        setTrending(t.results || []);
+        setPopularMovies(m.results || []);
+        setPopularTV(v.results || []);
+        if (t.results?.[0]) setHeroMovie(t.results[0]);
+      } catch (e) {
+        console.error(e);
       }
     }
-    fetchMovies();
+    fetchAll();
   }, []);
 
   useEffect(() => {
     if (search.length > 2) {
-      const delaySearch = setTimeout(async () => {
+      const timer = setTimeout(async () => {
         const res = await fetch(`/api/tmdb?path=search/multi&query=${encodeURIComponent(search)}`);
         const data = await res.json();
         setSearchResults(data.results || []);
       }, 500);
-      return () => clearTimeout(delaySearch);
+      return () => clearTimeout(timer);
     } else {
       setSearchResults([]);
     }
@@ -68,129 +55,187 @@ export default function Home() {
     return (
       <div 
         onClick={() => router.push(`/watch/${type}/${item.id}`)}
-        className="relative aspect-[2/3] bg-[#222] rounded-md overflow-hidden cursor-pointer movie-card-hover group focus-ring"
+        className="movie-card focus-ring"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && router.push(`/watch/${type}/${item.id}`)}
       >
         <img 
           src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster'} 
           alt={item.title || item.name}
-          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-          <p className="text-sm font-bold mb-1 line-clamp-1">{item.title || item.name}</p>
-          <div className="flex justify-between text-[10px] text-gray-300">
+        <div className="movie-overlay">
+          <p className="movie-card-title">{item.title || item.name}</p>
+          <div className="movie-card-meta">
             <span>{item.release_date?.split('-')[0] || item.first_air_date?.split('-')[0]}</span>
-            <span className="text-[#f1c40f]"><i className="fas fa-star mr-1"></i>{item.vote_average?.toFixed(1)}</span>
+            <span className="rating"><i className="fas fa-star ml-1"></i>{item.vote_average?.toFixed(1)}</span>
           </div>
         </div>
       </div>
     );
   };
 
-  const MovieSection = ({ title, items }: { title: string, items: any[] }) => (
-    <div className="mb-10">
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl md:text-2xl font-bold">{title}</h2>
-        <a href="#" className="text-[#e50914] text-sm hover:underline">عرض الكل</a>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-        {items.map((item: any) => <MovieCard key={item.id} item={item} />)}
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#111] text-white" dir="rtl">
+    <div className="min-h-screen" dir="rtl">
       <Head>
         <title>سينما تايم | للمشاهدة المباشرة</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </Head>
 
-      <nav className={`fixed top-0 w-full z-[1000] flex justify-between items-center px-[6%] py-4 transition-all duration-300 ${scrolled ? 'bg-[#0c0c0c] border-b border-[#222]' : 'bg-gradient-to-b from-black/80 to-transparent'}`}>
-        <div className="flex items-center gap-8">
-          <a href="/" className="text-[#e50914] text-3xl font-bold tracking-wider">سينما تايم</a>
-          <ul className="hidden md:flex items-center gap-6 text-[#b3b3b3] text-sm">
-            <li><a href="/" className="text-white font-bold">الرئيسية</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">أفلام</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">مسلسلات</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">أضيف حديثاً</a></li>
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="nav-right">
+          <a href="/" className="logo">سينما تايم</a>
+          <ul className="nav-menu">
+            <li><a href="#" className="active">الرئيسية</a></li>
+            <li><a href="#">أفلام</a></li>
+            <li><a href="#">مسلسلات</a></li>
+            <li><a href="#">أضيف حديثاً</a></li>
           </ul>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="relative flex items-center">
-            <i className="fas fa-search absolute right-3 text-gray-400 text-sm"></i>
+        <div className="nav-left">
+          <div className="search-box">
+            <i className="fas fa-search"></i>
             <input 
               type="text" 
-              placeholder="ابحث عن فيلم أو مسلسل..."
+              placeholder="بحث..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-black/60 border border-[#444] rounded-full py-2 pr-10 pl-4 text-sm outline-none focus:border-[#e50914] focus:bg-black/80 transition-all w-48 md:w-64"
             />
           </div>
-          <div className="w-8 h-8 bg-red-600 rounded-sm cursor-pointer"></div>
+          <div className="user-profile bg-[#e50914]"></div>
         </div>
       </nav>
 
-      {search.length > 2 && (
-        <div className="pt-24 px-[6%] min-h-screen bg-[#111]">
-          <h2 className="text-2xl font-bold mb-8">نتائج البحث عن: {search}</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5">
-            {searchResults.map((item: any) => <MovieCard key={item.id} item={item} />)}
+      {search.length > 2 ? (
+        <div className="main-container pt-32">
+          <h2 className="section-title mb-8">نتائج البحث عن: {search}</h2>
+          <div className="movie-row">
+            {searchResults.map((m: any) => <MovieCard key={m.id} item={m} />)}
           </div>
         </div>
-      )}
-
-      {!search && (
+      ) : (
         <>
           {heroMovie && (
-            <div className="relative h-[85vh] flex items-center px-[6%]">
-              <div 
-                className="absolute inset-0 z-[-1] bg-cover bg-center"
-                style={{ backgroundImage: `linear-gradient(to right, rgba(17,17,17,0.9) 20%, transparent), linear-gradient(to top, #111, transparent), url(https://image.tmdb.org/t/p/original${heroMovie.backdrop_path})` }}
-              />
-              <div className="max-w-2xl mt-20">
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">{heroMovie.title || heroMovie.name}</h1>
-                <div className="flex items-center gap-4 text-sm text-gray-300 mb-6">
-                  <span className="text-[#f1c40f] font-bold"><i className="fas fa-star ml-1"></i>{heroMovie.vote_average?.toFixed(1)}</span>
+            <section 
+              className="hero" 
+              style={{ backgroundImage: `linear-gradient(to right, rgba(17,17,17,0.9) 10%, transparent), linear-gradient(to top, #111, transparent), url(https://image.tmdb.org/t/p/original${heroMovie.backdrop_path})` }}
+            >
+              <div className="hero-content">
+                <h1 className="hero-title">{heroMovie.title || heroMovie.name}</h1>
+                <div className="hero-meta">
+                  <span className="rating"><i className="fas fa-star ml-1"></i>{heroMovie.vote_average?.toFixed(1)}</span>
                   <span>{heroMovie.release_date?.split('-')[0] || heroMovie.first_air_date?.split('-')[0]}</span>
-                  <span className="border border-gray-400 px-2 py-0.5 rounded text-xs">16+</span>
+                  <span className="age-limit">16+</span>
                 </div>
-                <p className="text-gray-200 text-lg leading-relaxed mb-8 drop-shadow-md line-clamp-3">
-                  {heroMovie.overview}
-                </p>
-                <div className="flex gap-4">
+                <p className="hero-desc">{heroMovie.overview}</p>
+                <div className="hero-btns">
                   <button 
                     onClick={() => router.push(`/watch/${heroMovie.media_type || (heroMovie.title ? 'movie' : 'tv')}/${heroMovie.id}`)}
-                    className="bg-white text-black px-8 py-3 rounded font-bold flex items-center gap-3 hover:bg-white/80 transition-all focus-ring"
+                    className="btn btn-play focus-ring"
                   >
                     <i className="fas fa-play"></i> تشغيل
                   </button>
-                  <button className="bg-gray-500/70 text-white px-8 py-3 rounded font-bold flex items-center gap-3 hover:bg-gray-500/40 transition-all focus-ring">
+                  <button className="btn btn-info focus-ring">
                     <i className="fas fa-info-circle"></i> المزيد من المعلومات
                   </button>
                 </div>
               </div>
-            </div>
+            </section>
           )}
 
-          <main className="px-[6%] py-10 relative z-10 bg-[#111]">
-            <MovieSection title="أفلام رائجة" items={trending} />
-            <MovieSection title="مسلسلات شهيرة" items={popular} />
-            <MovieSection title="الأعلى تقييماً" items={topRated} />
-          </main>
+          <div className="main-container">
+            <div className="mb-12">
+              <div className="section-title">
+                <h2>أفلام رائجة</h2>
+                <a href="#">عرض الكل</a>
+              </div>
+              <div className="movie-row">
+                {trending.slice(0, 12).map((m: any) => <MovieCard key={m.id} item={m} />)}
+              </div>
+            </div>
+
+            <div className="mb-12">
+              <div className="section-title">
+                <h2>أفلام مختارة</h2>
+                <a href="#">عرض الكل</a>
+              </div>
+              <div className="movie-row">
+                {popularMovies.slice(0, 12).map((m: any) => <MovieCard key={m.id} item={m} />)}
+              </div>
+            </div>
+
+            <div className="mb-12">
+              <div className="section-title">
+                <h2>مسلسلات شهيرة</h2>
+                <a href="#">عرض الكل</a>
+              </div>
+              <div className="movie-row">
+                {popularTV.slice(0, 12).map((m: any) => <MovieCard key={m.id} item={m} />)}
+              </div>
+            </div>
+          </div>
         </>
       )}
 
-      <footer className="border-t border-[#222] py-10 px-[6%] text-center text-gray-500 text-sm">
-        <p className="mb-4">جميع الحقوق محفوظة لسينما تايم © 2026</p>
-        <div className="flex justify-center gap-6">
-          <a href="#" className="hover:text-white">سياسة الخصوصية</a>
-          <a href="#" className="hover:text-white">اتصل بنا</a>
-          <a href="#" className="hover:text-white">شروط الاستخدام</a>
+      <footer>
+        <p>جميع الحقوق محفوظة لسينما تايم © 2026</p>
+        <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '20px' }}>
+          <a href="#" style={{ color: '#555', textDecoration: 'none' }}>الخصوصية</a>
+          <a href="#" style={{ color: '#555', textDecoration: 'none' }}>شروط الاستخدام</a>
+          <a href="#" style={{ color: '#555', textDecoration: 'none' }}>اتصل بنا</a>
         </div>
       </footer>
+
+      <style jsx global>{`
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: #111; color: #fff; overflow-x: hidden; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 6%; position: fixed; width: 100%; top: 0; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); transition: background 0.3s ease; }
+        .navbar.scrolled { background-color: #0c0c0c; border-bottom: 1px solid #222; }
+        .nav-right, .nav-left { display: flex; align-items: center; gap: 30px; }
+        .logo { color: #e50914; font-size: 28px; font-weight: 700; text-decoration: none; letter-spacing: 1px; }
+        .nav-menu { display: flex; list-style: none; gap: 20px; }
+        .nav-menu a { color: #b3b3b3; text-decoration: none; font-size: 16px; transition: color 0.3s ease; }
+        .nav-menu a:hover, .nav-menu a.active { color: #fff; font-weight: 600; }
+        .search-box { position: relative; display: flex; align-items: center; }
+        .search-box input { background-color: rgba(0, 0, 0, 0.6); border: 1px solid #444; color: #fff; padding: 8px 35px 8px 15px; border-radius: 20px; outline: none; font-size: 14px; transition: all 0.3s ease; }
+        .search-box input:focus { border-color: #e50914; background-color: rgba(0, 0, 0, 0.8); }
+        .search-box i { position: absolute; right: 12px; color: #b3b3b3; }
+        .user-profile { width: 35px; height: 35px; border-radius: 4px; cursor: pointer; }
+        .hero { height: 85vh; position: relative; background-size: cover; background-position: center; display: flex; align-items: center; padding: 0 6%; }
+        .hero-content { max-width: 650px; margin-top: 80px; }
+        .hero-title { font-size: 48px; font-weight: 700; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); }
+        .hero-meta { display: flex; gap: 15px; font-size: 14px; color: #cccccc; margin-bottom: 20px; align-items: center; }
+        .rating { color: #f1c40f; font-weight: bold; }
+        .age-limit { border: 1px solid #ccc; padding: 1px 6px; font-size: 12px; border-radius: 3px; }
+        .hero-desc { font-size: 18px; line-height: 1.6; color: #e5e5e5; margin-bottom: 30px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .hero-btns { display: flex; gap: 15px; }
+        .btn { padding: 10px 25px; border-radius: 5px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s ease; border: none; }
+        .btn-play { background-color: #fff; color: #000; }
+        .btn-play:hover { background-color: rgba(255,255,255,0.85); }
+        .btn-info { background-color: rgba(109, 109, 110, 0.7); color: #fff; }
+        .btn-info:hover { background-color: rgba(109, 109, 110, 0.4); }
+        .main-container { padding: 40px 6%; position: relative; z-index: 2; background-color: #111; }
+        .section-title { font-size: 22px; font-weight: 600; margin-bottom: 20px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .section-title a { font-size: 14px; color: #e50914; text-decoration: none; }
+        .movie-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+        .movie-card { position: relative; border-radius: 6px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease; aspect-ratio: 2/3; background-color: #222; }
+        .movie-card:hover { transform: scale(1.05); z-index: 5; }
+        .movie-card img { width: 100%; height: 100%; object-fit: cover; }
+        .movie-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 30%, transparent); opacity: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; transition: opacity 0.3s ease; }
+        .movie-card:hover .movie-overlay { opacity: 1; }
+        .movie-card-title { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+        .movie-card-meta { display: flex; justify-content: space-between; font-size: 12px; color: #b3b3b3; }
+        .focus-ring:focus { outline: 3px solid #e50914; transform: scale(1.05); z-index: 10; }
+        footer { border-top: 1px solid #222; padding: 30px 6%; text-align: center; color: #555; font-size: 14px; }
+        @media (max-width: 768px) {
+          .nav-menu { display: none; }
+          .hero-title { font-size: 32px; }
+          .hero-desc { font-size: 14px; }
+          .movie-row { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+        }
+      `}</style>
     </div>
   );
 }
