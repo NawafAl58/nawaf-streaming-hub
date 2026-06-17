@@ -5,7 +5,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const TMDB_FALLBACK_KEYS = [
   'c8233f2022d1645e5052327771746977', // Verified fallback 1
   '8d9047190e290e2ef59c9ba25c6198f3', // Verified fallback 2
-  'b83648c081395567b438258384218a55'  // Verified fallback 3
+  'b83648c081395567b438258384218a55', // Verified fallback 3
+  '5170d9a69076045d4474720612988d5e', // Updated fallback 4
+  '3a2964e5c8303d790d9f4e2f9d657597'  // Updated fallback 5
 ];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -37,7 +39,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Ensure key is passed as query parameter 'api_key' for v3 endpoints
       const url = `https://api.themoviedb.org/3/${apiPath}?api_key=${key}&${queryParams.toString()}`;
-      console.log(`Fetching from TMDB with key starting with ${key.substring(0, 4)}...`);
       
       const response = await fetch(url, {
         headers: {
@@ -52,10 +53,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       const errorData = await response.json().catch(() => ({}));
       lastError = errorData.status_message || `TMDB responded with ${response.status}`;
-      console.error(`Key ${key.substring(0, 4)} failed: ${lastError}`);
+      console.error(`TMDB key failed: ${lastError}`);
     } catch (err: any) {
       lastError = err.message;
-      console.error(`Fetch error with key ${key.substring(0, 4)}: ${lastError}`);
+      console.error(`Fetch error with TMDB key: ${lastError}`);
     }
   }
 
