@@ -2,37 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #050505;
-  --purple: #a855f7;
-  --ice-blue: #38bdf8;
+@layer base {
+  body {
+    @apply bg-[#111] text-white overflow-x-hidden;
+    font-family: 'Cairo', sans-serif;
+  }
 }
 
-body {
-  background: var(--background);
-  color: white;
-  font-family: 'Inter', sans-serif;
-  overflow-x: hidden;
+.nav-scrolled {
+  @apply bg-[#0c0c0c] border-b border-[#222];
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.movie-card-hover {
+  @apply transition-transform duration-300 hover:scale-105 hover:z-[5];
 }
 
-.neon-border-purple {
-  border: 1px solid var(--purple);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+.focus-ring {
+  @apply focus:outline-none focus:ring-4 focus:ring-[#e50914] focus:scale-105 transition-all duration-200;
 }
 
-.neon-border-blue {
-  border: 1px solid var(--ice-blue);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+/* Custom scrollbar for Netflix look */
+::-webkit-scrollbar {
+  width: 8px;
 }
-
-.focus-state:focus {
-  outline: 3px solid var(--ice-blue);
-  transform: scale(1.05);
-  transition: transform 0.2s ease-in-out;
+::-webkit-scrollbar-track {
+  background: #111;
+}
+::-webkit-scrollbar-thumb {
+  background: #e50914;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b20710;
 }
