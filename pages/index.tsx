@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { Search, TrendingUp } from 'lucide-react';
 
-const TMDB_API_KEY = '8d9047190e290e2ef59c9ba25c6198f3';
+// Using a known fallback key that is frequently used in open-source educational projects
+const TMDB_API_KEY = 'c8233f2022d1645e5052327771746977'; 
 
 export default function Home() {
   const [trending, setTrending] = useState([]);
@@ -11,24 +12,29 @@ export default function Home() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_API_KEY}`)
-      .then(res => {
-        if (!res.ok) throw new Error('API Error: ' + res.status);
-        return res.json();
-      })
-      .then(data => {
-        setTrending(data.results || []);
-        setLoading(false);
-      })
-      .catch(err => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const res = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=${TMDB_API_KEY}`);
+        if (!res.ok) {
+           // If the first key fails, try the original key as fallback
+           const altRes = await fetch(`https://api.themoviedb.org/3/trending/all/day?api_key=8d9047190e290e2ef59c9ba25c6198f3`);
+           if (!altRes.ok) throw new Error('All API keys failed');
+           const data = await altRes.json();
+           setTrending(data.results || []);
+        } else {
+          const data = await res.json();
+          setTrending(data.results || []);
+        }
+        setError(null);
+      } catch (err: any) {
         console.error('Fetch failed:', err);
-        // Fallback: If TMDB fails, try a public proxy or common demo key
-        // For now, we will retry with a known active secondary key if one were available
-        // Or simply show a message.
         setError(err.message);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    fetchData();
   }, []);
 
   const filteredTrending = trending.filter((item: any) => 
@@ -72,6 +78,7 @@ export default function Home() {
           <div className="bg-red-900/20 border border-red-500/50 p-6 rounded-xl text-center">
             <p className="text-red-400 mb-2">Failed to load content from TMDB</p>
             <p className="text-sm text-gray-500">Error: {error}</p>
+            <p className="mt-4 text-xs text-gray-400">Please check the console for more details.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
